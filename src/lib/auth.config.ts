@@ -26,7 +26,7 @@ export const authConfig: NextAuthConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const pathname = nextUrl.pathname;
-      const publicPaths = ["/", "/login"];
+      const publicPaths = ["/", "/login", "/signup"];
       const isPublic = publicPaths.includes(pathname);
 
       if (!isLoggedIn && !isPublic) return false;
@@ -45,18 +45,28 @@ export const authConfig: NextAuthConfig = {
       return true;
     },
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id!;
-        token.role = user.role as UserRole;
+      try {
+        if (user) {
+          token.id = user.id!;
+          token.role = user.role as UserRole;
+        }
+        return token;
+      } catch (error) {
+        console.error("[auth] JWT callback error:", error);
+        throw error;
       }
-      return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as UserRole;
+      try {
+        if (session.user) {
+          session.user.id = token.id as string;
+          session.user.role = token.role as UserRole;
+        }
+        return session;
+      } catch (error) {
+        console.error("[auth] Session callback error:", error);
+        throw error;
       }
-      return session;
     },
   },
   session: { strategy: "jwt" },

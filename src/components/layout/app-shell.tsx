@@ -55,6 +55,8 @@ export function AppShell({
   const nav =
     role === "admin" ? adminNav : role === "seller" ? sellerNav : buyerNav;
   const title = TITLES[role];
+  const displayName = userName.includes("@") ? userName.split("@")[0] : userName;
+  const firstName = displayName.split(" ")[0];
 
   return (
     <div className="min-h-screen flex">
@@ -122,7 +124,13 @@ export function AppShell({
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
-        <main className="flex-1 p-4 md:p-8 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-8 overflow-auto">
+          <div className="mb-6 rounded-3xl border border-slate-200 bg-white/80 px-6 py-5 shadow-sm shadow-slate-200/50">
+            <p className="text-sm text-slate-500">Hello, {firstName} 👋</p>
+            <h1 className="mt-1 text-3xl font-semibold text-slate-900">Welcome back to your dashboard</h1>
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

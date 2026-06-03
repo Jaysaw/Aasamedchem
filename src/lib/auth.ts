@@ -46,29 +46,50 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.warn("[auth] Missing email or password");
+            return null;
+          }
 
-        const email = String(credentials.email).toLowerCase().trim();
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email))
-          .limit(1);
+          const email = String(credentials.email).toLowerCase().trim();
+          console.log("[auth] Attempting login for email:", email);
+          
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, email))
+            .limit(1);
 
-        if (!user) return null;
+          if (!user) {
+            console.warn("[auth] User not found:", email);
+            return null;
+          }
 
-        const valid = await bcrypt.compare(
-          String(credentials.password),
-          user.passwordHash
-        );
-        if (!valid) return null;
+          console.log("[auth] User found:", email, "Role:", user.role);
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role as UserRole,
-        };
+          const valid = await bcrypt.compare(
+            String(credentials.password),
+            user.passwordHash
+          );
+          
+          if (!valid) {
+            console.warn("[auth] Invalid password for:", email);
+            return null;
+          }
+
+          console.log("[auth] Login successful for:", email);
+          
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role as UserRole,
+          };
+        } catch (error) {
+          console.error("[auth] Authorize error:", error);
+          throw error;
+        }
       },
     }),
   ],
