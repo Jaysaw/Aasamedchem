@@ -29,8 +29,16 @@ declare module "@auth/core/jwt" {
   }
 }
 
+if (!process.env.AUTH_SECRET) {
+  console.error(
+    "[auth] AUTH_SECRET is missing. Copy .env.example to .env.local and set AUTH_SECRET."
+  );
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {

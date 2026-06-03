@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FlaskConical, ArrowRight, Shield, ShoppingBag } from "lucide-react";
+import { FlaskConical, ArrowRight, Shield, ShoppingBag, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -18,8 +18,8 @@ export default function HomePage() {
             Inventory &amp; order management for pharmaceutical supply
           </h1>
           <p className="mt-4 text-teal-100 max-w-xl text-lg">
-            Multi-unit pricing in INR, precise conversions across weight, volume, and
-            count — built for admins and sellers.
+            Three roles — Admin, Seller, and Buyer — with multi-unit ordering (g, kg, L, mL,
+            items), live INR pricing, and full conversion transparency.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Button asChild size="lg" className="bg-white text-teal-900 hover:bg-teal-50">
@@ -32,38 +32,53 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-2 gap-6">
+      <section className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2 text-teal-700">
               <Shield className="h-5 w-5" />
-              <CardTitle>Admin console</CardTitle>
+              <CardTitle>Admin</CardTitle>
             </div>
             <CardDescription>
-              Manage products, stock, base pricing, and review quotations with full unit
-              breakdown.
+              Products, pricing, stock, and order approval with conversion audit.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-sm text-slate-600 space-y-2">
-            <p>• CRUD products with g, kg, L, mL, and item units</p>
-            <p>• View inventory and low-stock alerts</p>
-            <p>• Approve or reject seller quotations</p>
+          <CardContent className="text-sm text-slate-600 space-y-1">
+            <p>• CRUD products &amp; base units</p>
+            <p>• Approve buyer quotations</p>
+            <p>• Low-stock dashboard</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2 text-teal-700">
+              <Truck className="h-5 w-5" />
+              <CardTitle>Seller</CardTitle>
+            </div>
+            <CardDescription>
+              Fulfillment — view buyer orders, verify units, mark shipped.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600 space-y-1">
+            <p>• Buyer order pipeline</p>
+            <p>• Read-only inventory in all units</p>
+            <p>• Fulfill approved orders</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2 text-teal-700">
               <ShoppingBag className="h-5 w-5" />
-              <CardTitle>Seller portal</CardTitle>
+              <CardTitle>Buyer</CardTitle>
             </div>
             <CardDescription>
-              Search catalog, order in any supported unit, and see live INR totals.
+              Catalog, quantity in any unit, conversion tables, cart &amp; quotations.
             </CardDescription>
           </CardHeader>
-          <CardContent className="text-sm text-slate-600 space-y-2">
-            <p>• Filter by category and dimension</p>
-            <p>• Real-time price from rate × quantity</p>
-            <p>• Submit quotations or firm orders</p>
+          <CardContent className="text-sm text-slate-600 space-y-1">
+            <p>• Quick qty presets (kg, L, …)</p>
+            <p>• Live conversion breakdown</p>
+            <p>• Request quote or place order</p>
           </CardContent>
         </Card>
       </section>

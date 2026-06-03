@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { signIn, getSession } from "next-auth/react";
+import { homeForRole } from "@/lib/roles";
+import type { UserRole } from "@/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FlaskConical, Loader2 } from "lucide-react";
@@ -36,7 +38,7 @@ export default function LoginPage() {
     }
 
     const session = await getSession();
-    router.push(session?.user?.role === "admin" ? "/admin" : "/seller");
+    router.push(homeForRole((session?.user?.role as UserRole) ?? "buyer"));
   }
 
   return (
@@ -84,6 +86,8 @@ export default function LoginPage() {
             <p className="font-medium text-slate-800">Demo credentials</p>
             <p>Admin: admin@aasamedchem.demo / admin123</p>
             <p>Seller: seller@aasamedchem.demo / seller123</p>
+            <p>Buyer: buyer@aasamedchem.demo / buyer123</p>
+            <p className="text-slate-400 mt-1">buyer2@aasamedchem.demo / buyer123</p>
           </div>
           <p className="mt-4 text-center text-sm">
             <Link href="/" className="text-teal-700 hover:underline">

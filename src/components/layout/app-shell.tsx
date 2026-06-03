@@ -10,6 +10,8 @@ import {
   ClipboardList,
   LogOut,
   FlaskConical,
+  Warehouse,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,13 +22,25 @@ type NavItem = { href: string; label: string; icon: React.ReactNode };
 const adminNav: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
   { href: "/admin/products", label: "Products", icon: <Package className="h-4 w-4" /> },
-  { href: "/admin/orders", label: "Orders", icon: <ClipboardList className="h-4 w-4" /> },
+  { href: "/admin/orders", label: "All orders", icon: <ClipboardList className="h-4 w-4" /> },
 ];
 
 const sellerNav: NavItem[] = [
-  { href: "/seller", label: "Catalog", icon: <ShoppingCart className="h-4 w-4" /> },
-  { href: "/seller/orders", label: "My Orders", icon: <ClipboardList className="h-4 w-4" /> },
+  { href: "/seller", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+  { href: "/seller/orders", label: "Buyer orders", icon: <ClipboardList className="h-4 w-4" /> },
+  { href: "/seller/inventory", label: "Inventory", icon: <Warehouse className="h-4 w-4" /> },
 ];
+
+const buyerNav: NavItem[] = [
+  { href: "/buyer", label: "Catalog", icon: <ShoppingCart className="h-4 w-4" /> },
+  { href: "/buyer/orders", label: "My orders", icon: <ClipboardList className="h-4 w-4" /> },
+];
+
+const TITLES: Record<UserRole, string> = {
+  admin: "Admin Console",
+  seller: "Seller / Fulfillment",
+  buyer: "Buyer Portal",
+};
 
 export function AppShell({
   children,
@@ -38,8 +52,9 @@ export function AppShell({
   userName: string;
 }) {
   const pathname = usePathname();
-  const nav = role === "admin" ? adminNav : sellerNav;
-  const title = role === "admin" ? "Admin Console" : "Seller Portal";
+  const nav =
+    role === "admin" ? adminNav : role === "seller" ? sellerNav : buyerNav;
+  const title = TITLES[role];
 
   return (
     <div className="min-h-screen flex">
@@ -52,6 +67,10 @@ export function AppShell({
               <p className="text-xs text-[var(--color-muted-foreground)]">{title}</p>
             </div>
           </div>
+          <div className="mt-3 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-slate-400">
+            <Users className="h-3 w-3" />
+            {role}
+          </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {nav.map((item) => {
@@ -59,6 +78,7 @@ export function AppShell({
               pathname === item.href ||
               (item.href !== "/admin" &&
                 item.href !== "/seller" &&
+                item.href !== "/buyer" &&
                 pathname.startsWith(item.href));
             return (
               <Link
@@ -96,7 +116,7 @@ export function AppShell({
         <header className="md:hidden border-b bg-white px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold text-teal-800">
             <FlaskConical className="h-5 w-5" />
-            AasaMedChem
+            {title}
           </div>
           <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: "/login" })}>
             <LogOut className="h-4 w-4" />

@@ -10,7 +10,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
-export const userRoleEnum = pgEnum("user_role", ["admin", "seller"]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "seller", "buyer"]);
 export const dimensionEnum = pgEnum("dimension", ["weight", "volume", "count"]);
 export const displayUnitEnum = pgEnum("display_unit", [
   "g",
@@ -78,7 +78,7 @@ export const products = pgTable("products", {
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderNumber: varchar("order_number", { length: 32 }).notNull().unique(),
-  sellerId: uuid("seller_id")
+  buyerId: uuid("buyer_id")
     .notNull()
     .references(() => users.id),
   status: orderStatusEnum("status").notNull().default("quotation"),
@@ -129,7 +129,7 @@ export const productsRelations = relations(products, ({ many }) => ({
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
-  seller: one(users, { fields: [orders.sellerId], references: [users.id] }),
+  buyer: one(users, { fields: [orders.buyerId], references: [users.id] }),
   items: many(orderItems),
 }));
 

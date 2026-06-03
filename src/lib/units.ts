@@ -116,3 +116,96 @@ export const CONVERSION_REFERENCE = [
   { from: "mL", to: "L", factor: "0.001" },
   { from: "items", to: "items", factor: "1" },
 ] as const;
+
+/** Quick quantity chips per dimension for buyers */
+export const QUANTITY_PRESETS: Record<Dimension, { label: string; quantity: string; unit: DisplayUnit }[]> = {
+  weight: [
+    { label: "100 g", quantity: "100", unit: "g" },
+    { label: "500 g", quantity: "500", unit: "g" },
+    { label: "1 kg", quantity: "1", unit: "kg" },
+    { label: "5 kg", quantity: "5", unit: "kg" },
+    { label: "25 kg", quantity: "25", unit: "kg" },
+  ],
+  volume: [
+    { label: "100 mL", quantity: "100", unit: "mL" },
+    { label: "500 mL", quantity: "500", unit: "mL" },
+    { label: "1 L", quantity: "1", unit: "L" },
+    { label: "5 L", quantity: "5", unit: "L" },
+    { label: "20 L", quantity: "20", unit: "L" },
+  ],
+  count: [
+    { label: "100", quantity: "100", unit: "unit" },
+    { label: "500", quantity: "500", unit: "unit" },
+    { label: "1,000", quantity: "1000", unit: "unit" },
+    { label: "10,000", quantity: "10000", unit: "unit" },
+  ],
+};
+
+export type UnitBreakdown = {
+  unit: DisplayUnit;
+  unitLabel: string;
+  quantityEquivalent: string;
+  pricePerUnit: string;
+  pricePerUnitFormatted: string;
+  lineTotal: string;
+  lineTotalFormatted: string;
+};
+
+export function buildConversionBreakdown(
+  quantity: string | number,
+  selectedUnit: DisplayUnit,
+  baseUnit: DisplayUnit,
+  dimension: Dimension,
+  pricePerBaseUnit: string | number
+): {
+  baseQuantity: string;
+  baseQuantityFormatted: string;
+  selectedLineTotal: string;
+  selectedLineTotalFormatted: string;
+  units: UnitBreakdown[];
+  formula: string;
+} {
+  const qty = new Decimal(quantity);
+  const baseQty = toBaseQuantity(quantity, selectedUnit, baseUnit);
+  const selectedLineTotal = calculateLineTotalInr(
+    quantity,
+    selectedUnit,
+    baseUnit,
+    pricePerBaseUnit
+  );
+
+  const units = unitsForDimension(dimension).map((unit) => {
+    const equiv = fromBaseQuantity(baseQty.toString(), unit, baseUnit);
+    const perUnit = pricePerDisplayUnit(pricePerBaseUnit, unit, baseUnit);
+    return {
+      unit,
+      unitLabel: unitLabel(unit),
+      quantityEquivalent: equiv.toDecimalPlaces(6, Decimal.ROUND_HALF_UP).toString(),
+      pricePerUnit: perUnit.toString(),
+      pricePerUnitFormatted: formatInr(perUnit),
+      lineTotal: selectedLineTotal.toString(),
+      lineTotalFormatted: formatInr(selectedLineTotal),
+    };
+  });
+
+  const formula = `${qty.toString()} ${unitLabel(selectedUnit)} → ${baseQty.toDecimalPlaces(6).toString()} ${unitLabel(baseUnit)} (base) × ${formatInr(pricePerBaseUnit)}/${unitLabel(baseUnit)}`;
+
+  return {
+    baseQuantity: baseQty.toString(),
+    baseQuantityFormatted: formatQuantity(baseQty, baseUnit),
+    selectedLineTotal: selectedLineTotal.toString(),
+    selectedLineTotalFormatted: formatInr(selectedLineTotal),
+    units,
+    formula,
+  };
+}
+
+export function stockInUnit(
+  stockBase: string | number,
+  displayUnit: DisplayUnit,
+  baseUnit: DisplayUnit
+): string {
+  return fromBaseQuantity(stockBase, displayUnit, baseUnit)
+    .toDecimalPlaces(4, Decimal.ROUND_HALF_UP)
+    .toString();
+}

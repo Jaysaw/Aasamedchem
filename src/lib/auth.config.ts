@@ -1,7 +1,23 @@
 import type { NextAuthConfig } from "next-auth";
 import type { UserRole } from "@/types";
+import { homeForRole } from "@/lib/roles";
+
+function roleGuard(pathname: string, role: UserRole | undefined): string | null {
+  if (pathname.startsWith("/admin") && role !== "admin") {
+    return homeForRole(role ?? "buyer");
+  }
+  if (pathname.startsWith("/seller") && role !== "seller") {
+    return homeForRole(role ?? "buyer");
+  }
+  if (pathname.startsWith("/buyer") && role !== "buyer") {
+    return homeForRole(role ?? "buyer");
+  }
+  return null;
+}
 
 export const authConfig: NextAuthConfig = {
+  secret: process.env.AUTH_SECRET,
+  trustHost: true,
   providers: [],
   pages: {
     signIn: "/login",
@@ -15,18 +31,15 @@ export const authConfig: NextAuthConfig = {
 
       if (!isLoggedIn && !isPublic) return false;
 
+      const role = auth?.user?.role as UserRole | undefined;
+
       if (isLoggedIn && pathname === "/login") {
-        return Response.redirect(
-          new URL(auth?.user?.role === "admin" ? "/admin" : "/seller", nextUrl)
-        );
+        return Response.redirect(new URL(homeForRole(role!), nextUrl));
       }
 
-      if (pathname.startsWith("/admin") && auth?.user?.role !== "admin") {
-        return Response.redirect(new URL("/seller", nextUrl));
-      }
-
-      if (pathname.startsWith("/seller") && auth?.user?.role !== "seller") {
-        return Response.redirect(new URL("/admin", nextUrl));
+      const redirect = roleGuard(pathname, role);
+      if (redirect) {
+        return Response.redirect(new URL(redirect, nextUrl));
       }
 
       return true;

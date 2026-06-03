@@ -4,12 +4,13 @@ import { z } from "zod";
 import { db } from "@/db";
 import { products } from "@/db/schema";
 import {
-  calculateLineTotalInr,
+  buildConversionBreakdown,
   formatInr,
-  fromBaseQuantity,
   isUnitValidForDimension,
   pricePerDisplayUnit,
-  toBaseQuantity,
+  stockInUnit,
+  unitsForDimension,
+  type Dimension,
   type DisplayUnit,
 } from "@/lib/units";
 
@@ -33,36 +34,43 @@ export async function POST(req: NextRequest) {
     }
 
     const unit = body.unit as DisplayUnit;
-    if (!isUnitValidForDimension(unit, product.dimension)) {
+    const dimension = product.dimension as Dimension;
+    if (!isUnitValidForDimension(unit, dimension)) {
       return NextResponse.json({ error: "Invalid unit for product" }, { status: 400 });
     }
 
     const baseUnit = product.baseUnit as DisplayUnit;
-    const lineTotal = calculateLineTotalInr(
+    const breakdown = buildConversionBreakdown(
       body.quantity,
       unit,
       baseUnit,
+      dimension,
       product.pricePerBaseUnit
     );
-    const baseQty = toBaseQuantity(body.quantity, unit, baseUnit);
+
     const unitPrice = pricePerDisplayUnit(
       product.pricePerBaseUnit,
       unit,
       baseUnit
     );
 
+    const stockByUnit = unitsForDimension(dimension).map((u) => ({
+      unit: u,
+      quantity: stockInUnit(product.stockQuantity, u, baseUnit),
+    }));
+
     return NextResponse.json({
-      lineTotalInr: lineTotal.toString(),
-      lineTotalFormatted: formatInr(lineTotal),
+      lineTotalInr: breakdown.selectedLineTotal,
+      lineTotalFormatted: breakdown.selectedLineTotalFormatted,
       unitPriceInr: unitPrice.toString(),
       unitPriceFormatted: formatInr(unitPrice),
-      quantityInBase: baseQty.toString(),
-      quantityInBaseFormatted: fromBaseQuantity(
-        baseQty.toString(),
-        baseUnit,
-        baseUnit
-      ).toString(),
+      quantityInBase: breakdown.baseQuantity,
+      quantityInBaseFormatted: breakdown.baseQuantityFormatted,
       baseUnit: product.baseUnit,
+      formula: breakdown.formula,
+      conversionTable: breakdown.units,
+      stockByUnit,
+      availableUnits: unitsForDimension(dimension),
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Invalid request";

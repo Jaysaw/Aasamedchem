@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "node scripts/clean-next.cjs && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -11,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/scripts/seed.ts",
+    "db:migrate-buyer": "tsx src/scripts/migrate-buyer.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
@@ -43,6 +45,7 @@
     "@types/node": "^20.19.1",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.29.0",
     "eslint-config-next": "^15.3.4",

@@ -27,9 +27,20 @@ const placeOrderSchema = z.object({
   asQuotation: z.boolean().optional(),
 });
 
+function revalidateOrderPaths() {
+  revalidatePath("/buyer");
+  revalidatePath("/buyer/orders");
+  revalidatePath("/seller");
+  revalidatePath("/seller/orders");
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin");
+}
+
 export async function placeOrder(input: z.infer<typeof placeOrderSchema>) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id || session.user.role !== "buyer") {
+    throw new Error("Only buyers can place orders");
+  }
 
   const parsed = placeOrderSchema.parse(input);
   let total = new Decimal(0);
@@ -92,7 +103,7 @@ export async function placeOrder(input: z.infer<typeof placeOrderSchema>) {
     .insert(orders)
     .values({
       orderNumber,
-      sellerId: session.user.id,
+      buyerId: session.user.id,
       status,
       totalInr: total.toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toString(),
       notes: parsed.notes ?? null,
@@ -115,37 +126,38 @@ export async function placeOrder(input: z.infer<typeof placeOrderSchema>) {
     }
   }
 
-  revalidatePath("/seller");
-  revalidatePath("/seller/orders");
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-
+  revalidateOrderPaths();
   return order;
 }
 
 export async function getAllOrders() {
   const session = await auth();
-  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+  if (!session?.user) throw new Error("Unauthorized");
+  if (session.user.role !== "admin" && session.user.role !== "seller") {
+    throw new Error("Unauthorized");
+  }
 
   return db
     .select({
       order: orders,
-      sellerName: users.name,
-      sellerEmail: users.email,
+      buyerName: users.name,
+      buyerEmail: users.email,
     })
     .from(orders)
-    .innerJoin(users, eq(orders.sellerId, users.id))
+    .innerJoin(users, eq(orders.buyerId, users.id))
     .orderBy(desc(orders.createdAt));
 }
 
-export async function getSellerOrders() {
+export async function getBuyerOrders() {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
+  if (!session?.user?.id || session.user.role !== "buyer") {
+    throw new Error("Unauthorized");
+  }
 
   return db
     .select()
     .from(orders)
-    .where(eq(orders.sellerId, session.user.id))
+    .where(eq(orders.buyerId, session.user.id))
     .orderBy(desc(orders.createdAt));
 }
 
@@ -156,7 +168,11 @@ export async function getOrderWithItems(orderId: string) {
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
   if (!order) return null;
 
-  if (session.user.role !== "admin" && order.sellerId !== session.user.id) {
+  const role = session.user.role;
+  if (
+    role === "buyer" &&
+    order.buyerId !== session.user.id
+  ) {
     throw new Error("Unauthorized");
   }
 
@@ -165,13 +181,13 @@ export async function getOrderWithItems(orderId: string) {
     .from(orderItems)
     .where(eq(orderItems.orderId, orderId));
 
-  let seller = null;
-  if (session.user.role === "admin") {
-    const [u] = await db.select().from(users).where(eq(users.id, order.sellerId)).limit(1);
-    seller = u ?? null;
+  let buyer = null;
+  if (role === "admin" || role === "seller") {
+    const [u] = await db.select().from(users).where(eq(users.id, order.buyerId)).limit(1);
+    buyer = u ?? null;
   }
 
-  return { order, items, seller };
+  return { order, items, buyer };
 }
 
 export async function updateOrderStatus(
@@ -179,7 +195,21 @@ export async function updateOrderStatus(
   status: "approved" | "rejected" | "fulfilled" | "cancelled" | "pending"
 ) {
   const session = await auth();
-  if (session?.user?.role !== "admin") throw new Error("Unauthorized");
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const role = session.user.role;
+
+  if (status === "fulfilled" && role === "seller") {
+    const [updated] = await db
+      .update(orders)
+      .set({ status: "fulfilled", updatedAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
+    revalidateOrderPaths();
+    return updated;
+  }
+
+  if (role !== "admin") throw new Error("Only admin can approve or reject orders");
 
   const [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
   if (!order) throw new Error("Order not found");
@@ -220,7 +250,6 @@ export async function updateOrderStatus(
     .where(eq(orders.id, orderId))
     .returning();
 
-  revalidatePath("/admin/orders");
-  revalidatePath("/seller/orders");
+  revalidateOrderPaths();
   return updated;
 }

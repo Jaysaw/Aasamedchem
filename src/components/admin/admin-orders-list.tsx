@@ -12,8 +12,8 @@ import { OrderDetailModal } from "@/components/orders/order-detail-modal";
 
 type Row = {
   order: Order;
-  sellerName: string;
-  sellerEmail: string;
+  buyerName: string;
+  buyerEmail: string;
 };
 
 const statusVariant: Record<string, "default" | "secondary" | "success" | "warning" | "danger"> = {
@@ -62,13 +62,13 @@ export function AdminOrdersList({ rows }: { rows: Row[] }) {
             </CardContent>
           </Card>
         ) : (
-          rows.map(({ order, sellerName, sellerEmail }) => (
+          rows.map(({ order, buyerName, buyerEmail }) => (
             <Card key={order.id}>
               <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4">
                 <div>
                   <CardTitle className="font-mono text-base">{order.orderNumber}</CardTitle>
                   <p className="text-sm text-slate-500 mt-1">
-                    {sellerName} · {sellerEmail}
+                    Buyer: {buyerName} · {buyerEmail}
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
                     {new Date(order.createdAt).toLocaleString("en-IN")}
@@ -120,7 +120,7 @@ export function AdminOrdersList({ rows }: { rows: Row[] }) {
       </div>
 
       {detailId && (
-        <OrderDetailModal orderId={detailId} onClose={() => setDetailId(null)} isAdmin />
+        <OrderDetailModal orderId={detailId} onClose={() => setDetailId(null)} showBuyer />
       )}
     </div>
   );

@@ -12,9 +12,10 @@ After deploying (see [Deploy to Vercel](#deploy-to-vercel)), add your production
 
 | Area | Capabilities |
 |------|----------------|
-| **Auth** | Email/password login with JWT sessions (NextAuth v5). Roles: `admin`, `seller`. |
-| **Admin** | CRUD products, view stock, low-stock alerts, review orders/quotations with unit breakdown, approve/reject/fulfill. |
-| **Seller** | Search/filter catalog, order in g/kg/mL/L/items, live INR line totals, cart, submit quotation or firm order. |
+| **Auth** | Email/password login with JWT sessions (NextAuth v5). Roles: `admin`, `seller`, `buyer`. |
+| **Admin** | CRUD products, stock, low-stock alerts, approve/reject buyer quotations and orders. |
+| **Seller** | Fulfillment dashboard — view all buyer orders, verify unit conversions, mark approved orders fulfilled, read-only inventory in all units. |
+| **Buyer** | Full catalog with quick quantity presets, live conversion tables (kg↔g, L↔mL), cart, quotations and orders. |
 | **Units** | Consistent conversion to canonical base units before pricing and stock checks. |
 | **Pricing** | All amounts in **INR**; high-precision `NUMERIC` in Postgres, `decimal.js` in app logic. |
 
@@ -91,10 +92,12 @@ Implementation: `src/lib/units.ts` using `decimal.js`.
 
 ## Test credentials
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | `admin@aasamedchem.demo` | `admin123` |
-| Seller | `seller@aasamedchem.demo` | `seller123` |
+| Role | Email | Password | Portal |
+|------|-------|----------|--------|
+| Admin | `admin@aasamedchem.demo` | `admin123` | `/admin` |
+| Seller | `seller@aasamedchem.demo` | `seller123` | `/seller` |
+| Buyer | `buyer@aasamedchem.demo` | `buyer123` | `/buyer` |
+| Buyer 2 | `buyer2@aasamedchem.demo` | `buyer123` | `/buyer` |
 
 ## Local setup
 
@@ -113,17 +116,19 @@ npm install
 
 ### 2. Environment variables
 
-Copy `.env.example` to `.env.local`:
+Copy `.env.example` to `.env.local` (**required** — Next.js does not read `.env.example`):
 
 ```bash
 cp .env.example .env.local
+# Windows PowerShell:
+Copy-Item .env.example .env.local
 ```
 
 Fill in:
 
 - `DATABASE_URL` — Neon connection string (Pooled connection recommended for serverless).
-- `AUTH_SECRET` — run `openssl rand -base64 32`
-- `NEXTAUTH_URL` — `http://localhost:3000` for local dev
+- `AUTH_SECRET` — run `openssl rand -base64 32` (sign-in fails without this)
+- `AUTH_URL` and `NEXTAUTH_URL` — `http://localhost:3000` (use the port shown by `npm run dev`, e.g. 3001 if 3000 is busy)
 
 ### 3. Database migration
 
@@ -136,16 +141,28 @@ Apply the SQL migration to Neon (SQL Editor or `psql`):
 npm run db:push
 ```
 
-### 4. Seed demo data
+### 4. Migrate (if upgrading from seller-only schema)
+
+```bash
+npm run db:migrate-buyer
+```
+
+### 5. Seed demo data (20 products, sample orders)
 
 ```bash
 npm run db:seed
 ```
 
-### 5. Run dev server
+### 6. Run dev server
 
 ```bash
 npm run dev
+```
+
+**Windows + OneDrive:** If you see `EINVAL: invalid argument, readlink` on `.next`, run a clean start (build cache lives in `node_modules/.cache/next`, not `.next`):
+
+```powershell
+npm run dev:clean
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -158,13 +175,20 @@ Open [http://localhost:3000](http://localhost:3000).
 2. **Products** — create/edit products; set dimension (sets base unit automatically), price per base unit, stock in base units.
 3. **Orders** — open any order to see ordered unit vs base quantity and INR math; approve quotations (deducts stock), reject, or mark fulfilled.
 
+### Buyer portal (`/buyer`)
+
+1. **Catalog** — search/filter; **quick quantity** chips (100 g, 1 kg, 5 L, …).
+2. Pick any supported **unit**; see **conversion breakdown** table (ordered unit → base unit → INR).
+3. **Cart** shows each line converted to base storage units.
+4. **Request quotation** or **place order** (buyers only).
+5. **My orders** — view conversion details per line.
+
 ### Seller portal (`/seller`)
 
-1. **Catalog** — search by name/SKU/category; filter by dimension.
-2. Pick **quantity** and **unit** (e.g. 2.5 **kg** of a product stored in **g**).
-3. Live **line total in INR** reflects conversion before add-to-cart.
-4. **Submit quotation** (no stock deduction until admin approves) or **Place order** (reserves stock immediately).
-5. **My Orders** — track status and view line-item breakdown.
+1. **Dashboard** — pipeline of buyer orders.
+2. **Buyer orders** — open details to verify kg/g, L/mL conversions and INR math.
+3. **Inventory** — read-only stock and rates in all units.
+4. **Mark fulfilled** on admin-approved orders.
 
 ## Deploy to Vercel
 

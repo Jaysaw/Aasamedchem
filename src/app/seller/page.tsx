@@ -1,31 +1,12 @@
-import { getProducts, getCategories } from "@/lib/actions/products";
-import { SellerCatalog } from "@/components/seller/seller-catalog";
+import { getAllOrders } from "@/lib/actions/orders";
+import { getProducts } from "@/lib/actions/products";
+import { SellerDashboard } from "@/components/seller/seller-dashboard";
 
-export default async function SellerPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; category?: string; dimension?: string }>;
-}) {
-  const params = await searchParams;
-  const [products, categories] = await Promise.all([
-    getProducts({
-      q: params.q,
-      category: params.category,
-      dimension: params.dimension,
-      activeOnly: true,
-    }),
-    getCategories(),
+export default async function SellerDashboardPage() {
+  const [orders, products] = await Promise.all([
+    getAllOrders(),
+    getProducts({ activeOnly: true }),
   ]);
 
-  return (
-    <SellerCatalog
-      products={products}
-      categories={categories}
-      initialFilters={{
-        q: params.q ?? "",
-        category: params.category ?? "",
-        dimension: params.dimension ?? "",
-      }}
-    />
-  );
+  return <SellerDashboard orders={orders} productCount={products.length} />;
 }

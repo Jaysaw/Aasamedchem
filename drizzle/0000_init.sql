@@ -1,4 +1,4 @@
-CREATE TYPE "public"."user_role" AS ENUM('admin', 'seller');
+CREATE TYPE "public"."user_role" AS ENUM('admin', 'seller', 'buyer');
 CREATE TYPE "public"."dimension" AS ENUM('weight', 'volume', 'count');
 CREATE TYPE "public"."display_unit" AS ENUM('g', 'kg', 'mL', 'L', 'unit');
 CREATE TYPE "public"."order_status" AS ENUM('quotation', 'pending', 'approved', 'rejected', 'fulfilled', 'cancelled');
@@ -33,7 +33,7 @@ CREATE TABLE "products" (
 CREATE TABLE "orders" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"order_number" varchar(32) NOT NULL,
-	"seller_id" uuid NOT NULL,
+	"buyer_id" uuid NOT NULL,
 	"status" "order_status" DEFAULT 'quotation' NOT NULL,
 	"total_inr" numeric(24, 4) NOT NULL,
 	"notes" text,
@@ -56,6 +56,6 @@ CREATE TABLE "order_items" (
 	"product_base_unit" "display_unit" NOT NULL
 );
 
-ALTER TABLE "orders" ADD CONSTRAINT "orders_seller_id_users_id_fk" FOREIGN KEY ("seller_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_buyer_id_users_id_fk" FOREIGN KEY ("buyer_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;

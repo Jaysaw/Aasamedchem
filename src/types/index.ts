@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "seller";
+export type UserRole = "admin" | "seller" | "buyer";
 
 export type CartLine = {
   productId: string;
